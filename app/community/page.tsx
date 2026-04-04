@@ -9,9 +9,9 @@ export default async function CommunityPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
-    .eq('id', user!.id)
+    .select('id, username, display_name, avatar_url')
+    .eq('id', user.id)
     .single()
 
-  return <CommunityHub user={user!} profile={profile} />
+  return <CommunityHub user={user} profile={profile} />
 }
