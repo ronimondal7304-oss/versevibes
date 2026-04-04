@@ -1,12 +1,11 @@
 -- =============================================
 -- VERSEVIBES DATABASE SCHEMA
--- Run this entire file in Supabase SQL Editor
 -- =============================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ----------------------------------------
--- PROFILES
+-- PROFILES (extends auth.users)
 -- ----------------------------------------
 CREATE TABLE public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -56,7 +55,7 @@ CREATE INDEX idx_global_messages_user ON public.global_messages(user_id);
 ALTER PUBLICATION supabase_realtime ADD TABLE public.global_messages;
 
 -- ----------------------------------------
--- CONVERSATIONS
+-- PRIVATE CONVERSATIONS
 -- ----------------------------------------
 CREATE TABLE public.conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -88,7 +87,7 @@ CREATE INDEX idx_private_messages_conv ON public.private_messages(conversation_i
 ALTER PUBLICATION supabase_realtime ADD TABLE public.private_messages;
 
 -- ----------------------------------------
--- CHAT REQUESTS
+-- CHAT REQUESTS (Letters)
 -- ----------------------------------------
 CREATE TABLE public.chat_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -105,7 +104,7 @@ CREATE INDEX idx_chat_requests_receiver ON public.chat_requests(receiver_id, sta
 CREATE INDEX idx_chat_requests_sender ON public.chat_requests(sender_id);
 
 -- =============================================
--- ROW LEVEL SECURITY
+-- ROW LEVEL SECURITY POLICIES
 -- =============================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -115,36 +114,36 @@ ALTER TABLE public.private_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_requests ENABLE ROW LEVEL SECURITY;
 
 -- PROFILES
-CREATE POLICY "Profiles viewable by authenticated users"
+CREATE POLICY "Profiles are viewable by authenticated users"
   ON public.profiles FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Users update own profile"
+CREATE POLICY "Users can update their own profile"
   ON public.profiles FOR UPDATE TO authenticated
   USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 -- GLOBAL MESSAGES
-CREATE POLICY "Global messages viewable by authenticated"
+CREATE POLICY "Global messages viewable by authenticated users"
   ON public.global_messages FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY "Authenticated users send global messages"
+CREATE POLICY "Authenticated users can send global messages"
   ON public.global_messages FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users soft-delete own messages"
+CREATE POLICY "Users can soft-delete their own messages"
   ON public.global_messages FOR UPDATE TO authenticated
   USING (auth.uid() = user_id);
 
 -- CONVERSATIONS
-CREATE POLICY "Users view own conversations"
+CREATE POLICY "Users can view their own conversations"
   ON public.conversations FOR SELECT TO authenticated
   USING (auth.uid() = participant_1 OR auth.uid() = participant_2);
 
-CREATE POLICY "Users create conversations they are part of"
+CREATE POLICY "Users can create conversations they are part of"
   ON public.conversations FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = participant_1 OR auth.uid() = participant_2);
 
 -- PRIVATE MESSAGES
-CREATE POLICY "Users view messages in their conversations"
+CREATE POLICY "Users can view messages in their conversations"
   ON public.private_messages FOR SELECT TO authenticated
   USING (
     EXISTS (
@@ -154,7 +153,7 @@ CREATE POLICY "Users view messages in their conversations"
     )
   );
 
-CREATE POLICY "Users send messages in their conversations"
+CREATE POLICY "Users can send messages in their conversations"
   ON public.private_messages FOR INSERT TO authenticated
   WITH CHECK (
     auth.uid() = sender_id AND
@@ -165,7 +164,7 @@ CREATE POLICY "Users send messages in their conversations"
     )
   );
 
-CREATE POLICY "Users mark messages read"
+CREATE POLICY "Users can mark messages as read"
   ON public.private_messages FOR UPDATE TO authenticated
   USING (
     EXISTS (
@@ -176,15 +175,15 @@ CREATE POLICY "Users mark messages read"
   );
 
 -- CHAT REQUESTS
-CREATE POLICY "Users view requests sent to or from them"
+CREATE POLICY "Users can view requests sent to or from them"
   ON public.chat_requests FOR SELECT TO authenticated
   USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
-CREATE POLICY "Authenticated users send chat requests"
+CREATE POLICY "Authenticated users can send chat requests"
   ON public.chat_requests FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = sender_id AND sender_id != receiver_id);
 
-CREATE POLICY "Receiver updates request status"
+CREATE POLICY "Receiver can update request status"
   ON public.chat_requests FOR UPDATE TO authenticated
   USING (auth.uid() = receiver_id)
   WITH CHECK (auth.uid() = receiver_id);
