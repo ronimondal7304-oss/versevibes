@@ -1,43 +1,25 @@
 'use client'
-import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
+import { useRef } from 'react'
 
-const testimonials = [
+const TESTIMONIALS = [
   {
-    quote: 'VerseVibes changed how I think about words. The community is warm, genuine, and endlessly inspiring.',
-    name: 'Aryan S.',
-    handle: '@aryan_creates',
-    color: '#7c3aed',
+    quote: "VerseVibes changed how I see poetry. Every video feels like it was made just for me. The community here truly understands the power of words.",
+    author: 'Arjun M.',
+    location: 'Mumbai, India',
+    color: '#a78bfa',
   },
   {
-    quote: 'I sent a random letter to a stranger and ended up with the most meaningful conversation of my week. Incredible.',
-    name: 'Priya M.',
-    handle: '@priya.vibes',
+    quote: "I found my people here. The global chat is alive with beautiful souls sharing their thoughts at 2am. This is what the internet should feel like.",
+    author: 'Priya S.',
+    location: 'Kolkata, India',
     color: '#f59e0b',
   },
   {
-    quote: 'The Global Vibe Room is alive at all hours. You\'re never alone here. Exactly what I needed.',
-    name: 'Dev K.',
-    handle: '@devthinks',
-    color: '#06b6d4',
-  },
-  {
-    quote: 'The poetry hits different when you can discuss it live with people who actually feel it.',
-    name: 'Sneha R.',
-    handle: '@sneha.words',
-    color: '#f43f5e',
-  },
-  {
-    quote: 'I\'ve been part of many communities. None feel this intentional and beautiful.',
-    name: 'Rohan T.',
-    handle: '@rohantells',
-    color: '#10b981',
-  },
-  {
-    quote: 'The aesthetic alone made me stay. Then the conversations made me never want to leave.',
-    name: 'Anjali V.',
-    handle: '@anjali.verse',
-    color: '#a855f7',
+    quote: "The 'Random Letters' feature is genius. I’ve made three genuine friends through it. Real connections through the art of words.",
+    author: 'Rahul K.',
+    location: 'Delhi, India',
+    color: '#34d399',
   },
 ]
 
@@ -46,7 +28,7 @@ export function Testimonials() {
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
   return (
-    <section ref={ref} className="py-32 px-6 overflow-hidden">
+    <section ref={ref} className="py-32 px-6">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -54,40 +36,49 @@ export function Testimonials() {
           transition={{ duration: 0.7 }}
           className="text-center mb-16"
         >
-          <p className="text-violet-400 text-sm font-medium tracking-widest uppercase mb-4">Voices</p>
-          <h2 className="font-display text-4xl lg:text-5xl text-white/90">
-            What the <span className="italic text-amber-400">community</span> says
+          <p className="text-sm font-medium tracking-widest uppercase mb-4" style={{ color: '#a78bfa' }}>
+            Community Love
+          </p>
+          <h2
+            className="text-4xl lg:text-5xl"
+            style={{ fontFamily: 'Playfair Display, Georgia, serif', color: 'rgba(255,255,255,0.9)' }}
+          >
+            Voices from the Vibe
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {testimonials.map((t, i) => (
+        <div className="grid md:grid-cols-3 gap-6">
+          {TESTIMONIALS.map((t, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] }}
-              className="glass rounded-2xl p-6 flex flex-col gap-4"
+              transition={{ duration: 0.6, delay: i * 0.15 }}
+              className="glass rounded-2xl p-7 relative overflow-hidden"
             >
-              {/* Stars */}
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, s) => (
-                  <span key={s} style={{ color: t.color }} className="text-sm">✦</span>
-                ))}
+              <div
+                className="absolute top-0 left-0 w-full h-0.5"
+                style={{ background: `linear-gradient(to right, ${t.color}, transparent)` }}
+              />
+              <div
+                className="text-4xl mb-4 font-serif leading-none"
+                style={{ color: t.color, fontFamily: 'Georgia, serif' }}
+              >
+                &ldquo;
               </div>
-              <p className="text-[#e8e8f0] text-sm leading-relaxed italic">
-                &ldquo;{t.quote}&rdquo;
+              <p className="text-sm leading-relaxed mb-6" style={{ color: '#c8c8d8' }}>
+                {t.quote}
               </p>
-              <div className="flex items-center gap-3 mt-auto pt-2 border-t border-white/5">
+              <div className="flex items-center gap-3">
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                  style={{ background: `${t.color}40` }}
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+                  style={{ background: `${t.color}40`, border: `1px solid ${t.color}50` }}
                 >
-                  {t.name.charAt(0)}
+                  {t.author.charAt(0)}
                 </div>
                 <div>
-                  <div className="text-white text-sm font-medium">{t.name}</div>
-                  <div className="text-[#44445a] text-xs">{t.handle}</div>
+                  <div className="text-sm font-medium" style={{ color: 'white' }}>{t.author}</div>
+                  <div className="text-xs" style={{ color: '#44445a' }}>{t.location}</div>
                 </div>
               </div>
             </motion.div>
