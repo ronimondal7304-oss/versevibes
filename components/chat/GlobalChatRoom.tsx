@@ -21,7 +21,7 @@ export function GlobalChatRoom({ user }: { user: User }) {
   const [typingUsers, setTypingUsers] = useState<string[]>([])
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const supabase = createClient()
 
   const scrollToBottom = useCallback(() => {
@@ -93,7 +93,7 @@ export function GlobalChatRoom({ user }: { user: User }) {
       const ch = supabase.channel('vv-presence')
       ch.send({ type: 'broadcast', event: 'typing', payload: { user_id: user.id, username: profile?.username } })
     }
-    clearTimeout(typingTimeoutRef.current)
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000)
   }, [isTyping, user.id])
 
