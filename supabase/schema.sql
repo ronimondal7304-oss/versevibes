@@ -1,5 +1,6 @@
 -- =============================================
 -- VERSEVIBES DATABASE SCHEMA
+-- Run this in your Supabase SQL Editor
 -- =============================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -51,7 +52,6 @@ CREATE TABLE public.global_messages (
 
 CREATE INDEX idx_global_messages_created ON public.global_messages(created_at DESC);
 CREATE INDEX idx_global_messages_user ON public.global_messages(user_id);
-
 ALTER PUBLICATION supabase_realtime ADD TABLE public.global_messages;
 
 -- ----------------------------------------
@@ -83,7 +83,6 @@ CREATE TABLE public.private_messages (
 );
 
 CREATE INDEX idx_private_messages_conv ON public.private_messages(conversation_id, created_at DESC);
-
 ALTER PUBLICATION supabase_realtime ADD TABLE public.private_messages;
 
 -- ----------------------------------------
@@ -102,9 +101,10 @@ CREATE TABLE public.chat_requests (
 
 CREATE INDEX idx_chat_requests_receiver ON public.chat_requests(receiver_id, status);
 CREATE INDEX idx_chat_requests_sender ON public.chat_requests(sender_id);
+ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_requests;
 
 -- =============================================
--- ROW LEVEL SECURITY POLICIES
+-- ROW LEVEL SECURITY
 -- =============================================
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -114,30 +114,26 @@ ALTER TABLE public.private_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_requests ENABLE ROW LEVEL SECURITY;
 
 -- PROFILES
-CREATE POLICY "Profiles are viewable by authenticated users"
+CREATE POLICY "Profiles viewable by authenticated users"
   ON public.profiles FOR SELECT TO authenticated USING (true);
-
-CREATE POLICY "Users can update their own profile"
+CREATE POLICY "Users can update own profile"
   ON public.profiles FOR UPDATE TO authenticated
   USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
 -- GLOBAL MESSAGES
 CREATE POLICY "Global messages viewable by authenticated users"
   ON public.global_messages FOR SELECT TO authenticated USING (true);
-
 CREATE POLICY "Authenticated users can send global messages"
   ON public.global_messages FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can soft-delete their own messages"
+CREATE POLICY "Users can soft-delete own messages"
   ON public.global_messages FOR UPDATE TO authenticated
   USING (auth.uid() = user_id);
 
 -- CONVERSATIONS
-CREATE POLICY "Users can view their own conversations"
+CREATE POLICY "Users can view own conversations"
   ON public.conversations FOR SELECT TO authenticated
   USING (auth.uid() = participant_1 OR auth.uid() = participant_2);
-
 CREATE POLICY "Users can create conversations they are part of"
   ON public.conversations FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = participant_1 OR auth.uid() = participant_2);
@@ -152,7 +148,6 @@ CREATE POLICY "Users can view messages in their conversations"
       AND (c.participant_1 = auth.uid() OR c.participant_2 = auth.uid())
     )
   );
-
 CREATE POLICY "Users can send messages in their conversations"
   ON public.private_messages FOR INSERT TO authenticated
   WITH CHECK (
@@ -163,7 +158,6 @@ CREATE POLICY "Users can send messages in their conversations"
       AND (c.participant_1 = auth.uid() OR c.participant_2 = auth.uid())
     )
   );
-
 CREATE POLICY "Users can mark messages as read"
   ON public.private_messages FOR UPDATE TO authenticated
   USING (
@@ -175,14 +169,12 @@ CREATE POLICY "Users can mark messages as read"
   );
 
 -- CHAT REQUESTS
-CREATE POLICY "Users can view requests sent to or from them"
+CREATE POLICY "Users can view requests involving them"
   ON public.chat_requests FOR SELECT TO authenticated
   USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-
 CREATE POLICY "Authenticated users can send chat requests"
   ON public.chat_requests FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = sender_id AND sender_id != receiver_id);
-
 CREATE POLICY "Receiver can update request status"
   ON public.chat_requests FOR UPDATE TO authenticated
   USING (auth.uid() = receiver_id)

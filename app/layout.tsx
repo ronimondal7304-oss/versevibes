@@ -1,13 +1,13 @@
-import type { Metadata } from 'next'
-import '../styles/globals.css'
+import type { Metadata } from "next"
+import "../styles/globals.css"
 
 export const metadata: Metadata = {
-  title: 'VerseVibes — Where Words Come Alive',
-  description: 'A cinematic community platform for the VerseVibes family. Connect, chat, and vibe together.',
+  title: "VerseVibes — Where Words Come Alive",
+  description: "A premium community platform for the VerseVibes family. Connect, chat, and vibe together.",
   openGraph: {
-    title: 'VerseVibes',
-    description: 'Where Words Come Alive',
-    type: 'website',
+    title: "VerseVibes — Where Words Come Alive",
+    description: "Connect, chat, and vibe with the VerseVibes community.",
+    type: "website",
   },
 }
 

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Github } from 'lucide-react'
+import { Github, ArrowLeft } from 'lucide-react'
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
@@ -12,6 +12,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [isError, setIsError] = useState(false)
   const supabase = createClient()
   const router = useRouter()
 
@@ -27,13 +28,14 @@ export default function AuthPage() {
     e.preventDefault()
     setLoading(true)
     setMessage('')
+    setIsError(false)
     if (mode === 'signup') {
       const { error } = await supabase.auth.signUp({ email, password })
-      if (error) setMessage(error.message)
+      if (error) { setMessage(error.message); setIsError(true) }
       else setMessage('Check your email to confirm your account!')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setMessage(error.message)
+      if (error) { setMessage(error.message); setIsError(true) }
       else router.push('/community')
     }
     setLoading(false)
@@ -47,26 +49,22 @@ export default function AuthPage() {
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-md"
       >
-        <div className="glass-bright rounded-3xl p-8">
-          <Link href="/" className="flex items-center gap-2 mb-8">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-label="VerseVibes logo">
-              <defs>
-                <linearGradient id="vv-grad-auth" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-                  <stop offset="0%" stopColor="#a855f7" />
-                  <stop offset="100%" stopColor="#f59e0b" />
-                </linearGradient>
-              </defs>
-              <path d="M4 8 L11 22 L16 12 L21 22 L28 8" stroke="url(#vv-grad-auth)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              <circle cx="16" cy="27" r="1.5" fill="url(#vv-grad-auth)" />
-            </svg>
-            <span style={{ fontFamily: 'Playfair Display, Georgia, serif' }} className="text-xl text-white">VerseVibes</span>
-          </Link>
+        <Link href="/" className="inline-flex items-center gap-2 text-sm text-[#8888a8] hover:text-white mb-8 transition-colors">
+          <ArrowLeft size={16} />
+          Back to home
+        </Link>
 
-          <h1 style={{ fontFamily: 'Playfair Display, Georgia, serif' }} className="text-3xl text-white mb-2">
+        <div className="glass-bright rounded-3xl p-8">
+          <div className="flex items-center gap-2.5 mb-8">
+            <VerseVibesLogoSmall />
+            <span style={{ fontFamily: 'var(--font-display, Georgia, serif)' }} className="text-xl text-white font-medium">VerseVibes</span>
+          </div>
+
+          <h1 style={{ fontFamily: 'var(--font-display, Georgia, serif)' }} className="text-3xl text-white mb-2">
             {mode === 'signin' ? 'Welcome back' : 'Join the vibe'}
           </h1>
-          <p className="text-sm mb-8" style={{ color: '#8888a8' }}>
-            {mode === 'signin' ? 'Sign in to your account' : 'Create your free account'}
+          <p className="text-[#8888a8] text-sm mb-8">
+            {mode === 'signin' ? 'Sign in to enter the community' : 'Create your free account today'}
           </p>
 
           <button
@@ -80,13 +78,13 @@ export default function AuthPage() {
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
-            <span className="text-xs" style={{ color: '#44445a' }}>or</span>
+            <span className="text-xs text-[#44445a]">or continue with email</span>
             <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.05)' }} />
           </div>
 
           <form onSubmit={handleEmail} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: '#8888a8' }}>Email</label>
+              <label className="block text-xs text-[#8888a8] mb-1.5 font-medium">Email</label>
               <input
                 type="email"
                 value={email}
@@ -94,11 +92,11 @@ export default function AuthPage() {
                 placeholder="you@example.com"
                 required
                 className="w-full rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#e8e8f0' }}
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
               />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1.5" style={{ color: '#8888a8' }}>Password</label>
+              <label className="block text-xs text-[#8888a8] mb-1.5 font-medium">Password</label>
               <input
                 type="password"
                 value={password}
@@ -106,13 +104,13 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 required
                 minLength={8}
-                className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#e8e8f0' }}
+                className="w-full rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition-colors"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
               />
             </div>
             {message && (
               <p className={`text-xs px-3 py-2 rounded-lg ${
-                message.includes('Check') ? 'text-green-400 bg-green-400/10' : 'text-rose-400 bg-rose-400/10'
+                isError ? 'text-rose-400 bg-rose-400/10' : 'text-green-400 bg-green-400/10'
               }`}>
                 {message}
               </p>
@@ -126,18 +124,32 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm mt-6" style={{ color: '#8888a8' }}>
+          <p className="text-center text-sm text-[#8888a8] mt-6">
             {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
             <button
-              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-              className="font-medium transition-colors"
-              style={{ color: '#a855f7' }}
+              onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setMessage('') }}
+              className="text-violet-400 hover:text-violet-300 transition-colors font-medium"
             >
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              {mode === 'signin' ? 'Sign up free' : 'Sign in'}
             </button>
           </p>
         </div>
       </motion.div>
     </main>
+  )
+}
+
+function VerseVibesLogoSmall() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-label="VerseVibes">
+      <defs>
+        <linearGradient id="vv-auth-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#f59e0b" />
+        </linearGradient>
+      </defs>
+      <path d="M4 8 L11 22 L16 12 L21 22 L28 8" stroke="url(#vv-auth-grad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <circle cx="16" cy="27" r="1.5" fill="url(#vv-auth-grad)" />
+    </svg>
   )
 }
