@@ -12,8 +12,8 @@ interface ChatRequest {
   message: string
   status: 'pending' | 'accepted' | 'rejected'
   created_at: string
-  sender_profile?: { username: string; display_name: string | null }
   receiver_profile?: { username: string; display_name: string | null }
+  sender_profile?: { username: string; display_name: string | null }
 }
 
 interface Profile {
@@ -37,25 +37,29 @@ export function LettersSection({ user }: { user: User }) {
   useEffect(() => { loadProfiles(); loadRequests() }, [])
 
   const loadProfiles = async () => {
-    const { data } = await supabase.from('profiles').select('id,username,display_name,avatar_url').neq('id', user.id).limit(40)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id,username,display_name,avatar_url')
+      .neq('id', user.id)
+      .limit(40)
     if (data) setProfiles(data)
   }
 
   const loadRequests = async () => {
     const { data: sent } = await supabase
       .from('chat_requests')
-      .select('*, receiver_profile:profiles!chat_requests_receiver_id_fkey(username,display_name)')
+      .select('id, sender_id, receiver_id, message, status, created_at, receiver_profile:profiles!receiver_id(username, display_name)')
       .eq('sender_id', user.id)
       .order('created_at', { ascending: false })
-    if (sent) setSentRequests(sent as ChatRequest[])
+    if (sent) setSentRequests(sent as unknown as ChatRequest[])
 
     const { data: inbox } = await supabase
       .from('chat_requests')
-      .select('*, sender_profile:profiles!chat_requests_sender_id_fkey(username,display_name)')
+      .select('id, sender_id, receiver_id, message, status, created_at, sender_profile:profiles!sender_id(username, display_name)')
       .eq('receiver_id', user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
-    if (inbox) setInboxRequests(inbox as ChatRequest[])
+    if (inbox) setInboxRequests(inbox as unknown as ChatRequest[])
   }
 
   const sendLetter = async (receiverId: string) => {
@@ -160,7 +164,7 @@ export function LettersSection({ user }: { user: User }) {
             ) : sentRequests.map(r => (
               <div key={r.id} className="glass rounded-xl p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm text-[#8888a8]">To @{(r as any).receiver_profile?.username}</span>
+                  <span className="text-sm text-[#8888a8]">To @{r.receiver_profile?.username}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${r.status === 'pending' ? 'bg-amber-400/10 text-amber-400' : r.status === 'accepted' ? 'bg-green-400/10 text-green-400' : 'bg-rose-400/10 text-rose-400'}`}>{r.status}</span>
                 </div>
                 <p className="text-sm text-[#e8e8f0]">{r.message}</p>
@@ -177,7 +181,7 @@ export function LettersSection({ user }: { user: User }) {
             ) : inboxRequests.map(r => (
               <motion.div key={r.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-4">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm text-violet-300 font-medium">From @{(r as any).sender_profile?.username}</span>
+                  <span className="text-sm text-violet-300 font-medium">From @{r.sender_profile?.username}</span>
                   <span className="text-xs text-[#44445a]">{new Date(r.created_at).toLocaleDateString()}</span>
                 </div>
                 <p className="text-sm text-[#e8e8f0] italic mb-4">&ldquo;{r.message}&rdquo;</p>
