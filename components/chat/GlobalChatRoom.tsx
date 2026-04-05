@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Send } from 'lucide-react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 
 interface Message {
   id: string
@@ -22,6 +23,8 @@ export function GlobalChatRoom({ user }: { user: User }) {
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null)
+  const userProfileRef = useRef<string | null>(null)
   const supabase = createClient()
 
   const scrollToBottom = useCallback(() => {
@@ -62,6 +65,8 @@ export function GlobalChatRoom({ user }: { user: User }) {
     const presenceChannel = supabase.channel('vv-presence', {
       config: { presence: { key: user.id }, broadcast: { self: false } }
     })
+    presenceChannelRef.current = presenceChannel
+
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState()
@@ -76,22 +81,28 @@ export function GlobalChatRoom({ user }: { user: User }) {
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
-          await presenceChannel.track({ user_id: user.id, username: profile?.username ?? 'Vibe' })
+          userProfileRef.current = profile?.username ?? 'Vibe'
+          await presenceChannel.track({ user_id: user.id, username: userProfileRef.current })
         }
       })
 
     return () => {
+      presenceChannelRef.current = null
       supabase.removeChannel(channel)
       supabase.removeChannel(presenceChannel)
     }
   }, [user.id, scrollToBottom])
 
-  const handleTyping = useCallback(async () => {
+  const handleTyping = useCallback(() => {
     if (!isTyping) {
       setIsTyping(true)
-      const { data: profile } = await supabase.from('profiles').select('username').eq('id', user.id).single()
-      const ch = supabase.channel('vv-presence')
-      ch.send({ type: 'broadcast', event: 'typing', payload: { user_id: user.id, username: profile?.username } })
+      if (presenceChannelRef.current) {
+        presenceChannelRef.current.send({
+          type: 'broadcast',
+          event: 'typing',
+          payload: { user_id: user.id, username: userProfileRef.current ?? 'Vibe' }
+        })
+      }
     }
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000)
