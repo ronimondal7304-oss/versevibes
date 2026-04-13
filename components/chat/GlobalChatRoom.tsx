@@ -6,12 +6,20 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Send } from 'lucide-react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
+type ProfileShape = { username: string; display_name: string | null; avatar_url: string | null }
+
 interface Message {
   id: string
   content: string
   created_at: string
   user_id: string
-  profiles: { username: string; display_name: string | null; avatar_url: string | null }
+  profiles: ProfileShape | ProfileShape[] | null
+}
+
+function getProfile(profiles: Message['profiles']): ProfileShape | null {
+  if (!profiles) return null
+  if (Array.isArray(profiles)) return profiles[0] ?? null
+  return profiles
 }
 
 export function GlobalChatRoom({ user }: { user: User }) {
@@ -26,11 +34,9 @@ export function GlobalChatRoom({ user }: { user: User }) {
   const presenceChannelRef = useRef<RealtimeChannel | null>(null)
   const userProfileRef = useRef<string | null>(null)
   const supabase = createClient()
-
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
-
   useEffect(() => {
     const loadMessages = async () => {
       const { data } = await supabase
@@ -39,13 +45,12 @@ export function GlobalChatRoom({ user }: { user: User }) {
         .eq('is_deleted', false)
         .order('created_at', { ascending: true })
         .limit(100)
-      if (data) setMessages(data as Message[])
+      if (data) setMessages(data as unknown as Message[])
       setLoading(false)
       setTimeout(scrollToBottom, 100)
     }
     loadMessages()
   }, [scrollToBottom])
-
   useEffect(() => {
     const channel = supabase
       .channel('global-messages-rt')
@@ -56,17 +61,15 @@ export function GlobalChatRoom({ user }: { user: User }) {
           .eq('id', payload.new.id)
           .single()
         if (data) {
-          setMessages(prev => [...prev, data as Message])
+          setMessages(prev => [...prev, data as unknown as Message])
           setTimeout(scrollToBottom, 50)
         }
       })
       .subscribe()
-
     const presenceChannel = supabase.channel('vv-presence', {
       config: { presence: { key: user.id }, broadcast: { self: false } }
     })
     presenceChannelRef.current = presenceChannel
-
     presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState()
@@ -85,14 +88,12 @@ export function GlobalChatRoom({ user }: { user: User }) {
           await presenceChannel.track({ user_id: user.id, username: userProfileRef.current })
         }
       })
-
     return () => {
       presenceChannelRef.current = null
       supabase.removeChannel(channel)
       supabase.removeChannel(presenceChannel)
     }
   }, [user.id, scrollToBottom])
-
   const handleTyping = useCallback(() => {
     if (!isTyping) {
       setIsTyping(true)
@@ -107,7 +108,6 @@ export function GlobalChatRoom({ user }: { user: User }) {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000)
   }, [isTyping, user.id])
-
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     const content = input.trim()
@@ -116,14 +116,12 @@ export function GlobalChatRoom({ user }: { user: User }) {
     setIsTyping(false)
     await supabase.from('global_messages').insert({ content, user_id: user.id })
   }
-
   const getColor = (uid: string) => {
     const colors = ['#7c3aed', '#a855f7', '#f59e0b', '#f43f5e', '#06b6d4', '#10b981', '#ec4899']
     return colors[uid.charCodeAt(0) % colors.length]
   }
   const getInitial = (name: string) => name.charAt(0).toUpperCase()
   const formatTime = (ts: string) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
   return (
     <div className="flex flex-col h-[calc(100vh-56px)]">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
@@ -136,7 +134,6 @@ export function GlobalChatRoom({ user }: { user: User }) {
           <span className="text-xs text-green-400">Live</span>
         </div>
       </div>
-
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {loading ? (
           <div className="space-y-4">
@@ -161,7 +158,8 @@ export function GlobalChatRoom({ user }: { user: User }) {
             <AnimatePresence initial={false}>
               {messages.map((msg) => {
                 const isOwn = msg.user_id === user.id
-                const name = msg.profiles?.display_name || msg.profiles?.username || 'Anon'
+                const profile = getProfile(msg.profiles)
+                const name = profile?.display_name || profile?.username || 'Anon'
                 return (
                   <motion.div key={msg.id} initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
                     <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white" style={{ background: getColor(msg.user_id) }}>
@@ -194,7 +192,6 @@ export function GlobalChatRoom({ user }: { user: User }) {
         )}
         <div ref={messagesEndRef} />
       </div>
-
       <div className="px-4 py-4 border-t border-white/5">
         <form onSubmit={sendMessage} className="flex gap-3 items-center">
           <input value={input} onChange={e => { setInput(e.target.value); handleTyping() }} placeholder="Share your vibe..." maxLength={2000} className="flex-1 bg-white/5 border border-white/8 rounded-full px-5 py-3 text-white placeholder-[#44445a] text-sm focus:outline-none focus:border-violet-500/40 transition-colors" />
